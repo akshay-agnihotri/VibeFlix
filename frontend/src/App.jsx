@@ -3,13 +3,29 @@ import Search from "./component/Search";
 import Spinner from "./component/Spinner";
 import MovieCard from "./component/MovieCard";
 import { useDebounce } from "use-debounce";
+import { getTrendingMovies, updateSearchCount } from "./appwrite";
 
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 1000);
   const [errorMessage, setErrorMessage] = useState("");
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [trendingMovies, setTrendingMovies] = useState([]);
+
+  useEffect(() => {
+    const fetchTrendingMovies = async () => {
+      try {
+        const movies = await getTrendingMovies();
+        setTrendingMovies(movies);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage("Error fetching movies", error.message);
+      }
+    };
+
+    fetchTrendingMovies();
+  }, []);
 
   useEffect(() => {
     const fetchMovies = async (debouncedSearchTerm) => {
@@ -41,6 +57,10 @@ const App = () => {
         }
 
         setMovieList(data.results || []);
+
+        if (debouncedSearchTerm && data.results.length > 0) {
+          await updateSearchCount(debouncedSearchTerm, data.results[0]);
+        }
       } catch (error) {
         console.error(error);
         setErrorMessage("Error fetching movies", error.message);
@@ -65,6 +85,20 @@ const App = () => {
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
 
+        {trendingMovies.length > 0 && (
+          <section className="trending">
+            <h2>Trending Movies</h2>
+            <ul className="movie-list">
+              {trendingMovies.map((movie, index) => (
+                <li key={movie.$id}>
+                  <p>{index + 1}</p>
+                  <img src={movie.poster_url} alt={movie.title} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="all-movies">
           <h2>All Movies</h2>
 
@@ -80,6 +114,7 @@ const App = () => {
             </ul>
           )}
         </section>
+        
       </div>
     </main>
   );
