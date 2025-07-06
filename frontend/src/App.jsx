@@ -2,20 +2,22 @@ import { useEffect, useState } from "react";
 import Search from "./component/Search";
 import Spinner from "./component/Spinner";
 import MovieCard from "./component/MovieCard";
+import { useDebounce } from "use-debounce";
 
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
   const [errorMessage, setErrorMessage] = useState("");
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const fetchMovies = async (searchTerm) => {
+    const fetchMovies = async (debouncedSearchTerm) => {
       setIsLoading(true);
       setErrorMessage("");
       try {
         const response = await fetch(
-          `http://localhost:5000/api/movies?searchTerm=${searchTerm}`,
+          `http://localhost:5000/api/movies?searchTerm=${debouncedSearchTerm}`,
           {
             method: "GET",
             headers: {
@@ -47,8 +49,8 @@ const App = () => {
       }
     };
 
-    fetchMovies(searchTerm);
-  }, [searchTerm]);
+    fetchMovies(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   return (
     <main>
